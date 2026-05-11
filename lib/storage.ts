@@ -6,7 +6,11 @@ const STORAGE_KEY = "receipts:saved";
 
 /** Compute SHA-256 hex of arbitrary bytes (browser, no node). */
 export async function sha256Hex(bytes: Uint8Array): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  // TS 5.7+ strict mode requires BufferSource<ArrayBuffer>, not ArrayBufferLike.
+  // Copy into a fresh ArrayBuffer-backed view to satisfy the type checker.
+  const buffer = new ArrayBuffer(bytes.byteLength);
+  new Uint8Array(buffer).set(bytes);
+  const digest = await crypto.subtle.digest("SHA-256", buffer);
   return Array.from(new Uint8Array(digest))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
