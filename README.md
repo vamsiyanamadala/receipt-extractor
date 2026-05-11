@@ -4,18 +4,18 @@ A streaming receipt-extraction app. Drop in an image, watch Claude's vision mode
 
 Submitted for the **Teleperformance Malaysia AI Intern Build Challenge**, May 2026.
 
-\*\*Live:\*\* https://receipt-extractor-six.vercel.app  
+\*\*Live:\*\* https://receipt-extractor-six.vercel.app
 
 \*\*Demo (90 s):\*\* \_(add after recording)\_
 
 ## TL;DR for the reviewer
 
 * **Live streaming UI** — fields populate one-by-one as Claude decodes the JSON, with a flash animation when each is confirmed.
-* **Strict structured outputs** via Claude tool-use (`tool\\\_choice: "extract\\\_receipt"`) — guaranteed-shape JSON, no parse failures.
+* **Strict structured outputs** via Claude tool-use (`tool\\\\\\\_choice: "extract\\\\\\\_receipt"`) — guaranteed-shape JSON, no parse failures.
 * **Malaysia-aware** — separates SST from service charge from subtotal, normalises `RM` / `MYR` / Ringgit symbol to `MYR`, detects IRBM UIN on MyInvois receipts, handles trilingual (English / Bahasa / Chinese) merchants.
 * **Confidence per field** — model returns 0–1 confidence; anything below 0.85 renders with a yellow "review" flag in the UI.
 * **Real eval harness** — `npm run eval` runs against `eval/fixtures/`, comparing against `eval/golden/` labels, reporting per-field accuracy, p50/p95 latency, and total cost.
-* **Prompt caching** — system prompt is cached with `cache\\\_control: ephemeral`; second-and-later extractions in a 5-minute window pay 0.1× input tokens for the prompt.
+* **Prompt caching** — system prompt is cached with `cache\\\\\\\_control: ephemeral`; second-and-later extractions in a 5-minute window pay 0.1× input tokens for the prompt.
 * **Duplicate detection** — SHA-256 image hash + `(merchant, date, total)` tuple match against history.
 * **Cost telemetry** — every extraction surfaces `$/extraction`, input/output tokens, and cache hit info in the UI.
 * **CSV export** shaped for Xero / QuickBooks bank-transaction import.
@@ -30,7 +30,7 @@ Submitted for the **Teleperformance Malaysia AI Intern Build Challenge**, May 20
 |Styling|Tailwind CSS · Instrument Serif + JetBrains Mono|
 |Form|react-hook-form · Zod|
 |AI|Anthropic Claude `claude-sonnet-4-6` (vision)|
-|Structured out|Tool-use with `tool\\\_choice` + strict input schema|
+|Structured out|Tool-use with `tool\\\\\\\_choice` + strict input schema|
 |Streaming|SSE from `/api/extract`, partial-JSON parser client-side|
 |Storage|`localStorage` (per assessment spec: in-memory OK)|
 |Eval|`npm run eval` CLI + `/eval` page hitting `/api/eval`|
@@ -54,8 +54,8 @@ Considered and rejected:
 ```
 ┌────────────┐ multipart/form-data ┌──────────────────────┐ tool-use streaming ┌──────────────┐
 │  Browser   │ ──────────────────► │  /api/extract (SSE)  │ ────────────────►  │ Anthropic    │
-│  Next.js   │ ◄────────────────── │  Node runtime        │ ◄── input\\\_json ─── │ Sonnet 4.6   │
-└─────┬──────┘ SSE: partial,       └──────────────────────┘  \\\_delta deltas     └──────────────┘
+│  Next.js   │ ◄────────────────── │  Node runtime        │ ◄── input\\\\\\\_json ─── │ Sonnet 4.6   │
+└─────┬──────┘ SSE: partial,       └──────────────────────┘  \\\\\\\_delta deltas     └──────────────┘
       │ complete, error
       │
       │ each partial → flash field, parse with partial-json
@@ -67,12 +67,12 @@ Considered and rejected:
 1. Browser POSTs the image to `/api/extract` as multipart form data.
 2. The route validates type/size, base64-encodes, and calls Anthropic with:
 
-   * System prompt cached with `cache\\\_control: ephemeral`
-   * Forced tool use (`tool\\\_choice: { type: "tool", name: "extract\\\_receipt" }`)
+   * System prompt cached with `cache\\\\\\\_control: ephemeral`
+   * Forced tool use (`tool\\\\\\\_choice: { type: "tool", name: "extract\\\\\\\_receipt" }`)
    * Strict input schema (`additionalProperties: false`, required fields)
-3. The stream is parsed: each `input\\\_json\\\_delta` event is appended; `partial-json` parses the accumulated string and yields a `partial` SSE event to the client whenever it changes.
+3. The stream is parsed: each `input\\\\\\\_json\\\\\\\_delta` event is appended; `partial-json` parses the accumulated string and yields a `partial` SSE event to the client whenever it changes.
 4. Client uses a hand-rolled SSE parser (since `EventSource` is GET-only) and pushes each partial into a single piece of React state; the form re-renders, flashes newly-confirmed fields.
-5. On `complete`, Zod re-validates the final object; cost is computed from `usage.input\\\_tokens / output\\\_tokens / cache\\\_read\\\_input\\\_tokens / cache\\\_creation\\\_input\\\_tokens` using known May-2026 pricing.
+5. On `complete`, Zod re-validates the final object; cost is computed from `usage.input\\\\\\\_tokens / output\\\\\\\_tokens / cache\\\\\\\_read\\\\\\\_input\\\\\\\_tokens / cache\\\\\\\_creation\\\\\\\_input\\\\\\\_tokens` using known May-2026 pricing.
 6. Duplicate detection runs against history (image hash + tuple match).
 7. User edits and submits; record persists to `localStorage` and is exportable as CSV (Xero-shaped) or JSON.
 
@@ -84,7 +84,7 @@ The system prompt is in `lib/prompt.ts` and is intentionally:
 
 * **Long and stable** — so prompt caching pays off across runs in a 5-minute window. The cache block is the entire system prompt.
 * **Authoritative on Malaysian rules** — SST replaced GST on 1 Sep 2018, service charge is separate from tax, IRBM UIN is 15 chars, MyInvois Phase 4 requires it for transactions > RM10,000 from 1 Jan 2026.
-* **Tool-grounded** — instructs the model that output is delivered exclusively via the `extract\\\_receipt` tool call.
+* **Tool-grounded** — instructs the model that output is delivered exclusively via the `extract\\\\\\\_receipt` tool call.
 * **Honest about confidence** — explicitly asks for 0–1 confidence per critical field, with a calibration scale that values low-confidence-honesty over confident-wrong.
 
 \---
@@ -109,7 +109,11 @@ The system prompt is in `lib/prompt.ts` and is intentionally:
 
 
 
-\*\*The one failure:\*\* a Starbucks Malaysia receipt labels its tax as "Service Tax (ST)" rather than "SST". The model captured the tax amount correctly (RM 1.47) but classified it ambiguously between `sst\\\_amount` and `service\\\_charge`. This is a real ambiguity in post-2018 Malaysian receipt vocabulary — "Service Tax" \*is\* the S in SST, but establishments often still print it on its own line. Roadmap: tighter system-prompt disambiguation + a regex pre-classifier on common Malaysian tax label variants.
+> \*\*Note:\*\* the `/eval` page in the live app currently times out on Vercel's Hobby tier (60s function limit) because running 8 sequential extractions takes \~75s. Real numbers come from `npm run eval` locally. Running `/eval` as a synchronous HTTP route was always a tradeoff — production-grade evals belong in CI, not in a serverless function. Documented as a known limitation; roadmap fix is a job queue (e.g. Vercel Queues or Inngest) that runs eval async and writes results back to a KV store.
+
+
+
+\*\*The one failure:\*\* a Starbucks Malaysia receipt labels its tax as "Service Tax (ST)" rather than "SST". The model captured the tax amount correctly (RM 1.47) but classified it ambiguously between `sst\\\\\\\_amount` and `service\\\\\\\_charge`. This is a real ambiguity in post-2018 Malaysian receipt vocabulary — "Service Tax" \*is\* the S in SST, but establishments often still print it on its own line. Roadmap: tighter system-prompt disambiguation + a regex pre-classifier on common Malaysian tax label variants.
 
 Run:
 
@@ -120,7 +124,7 @@ npm run eval         # CLI runner
 
 Both load `.jpg`/`.png`/`.webp` images from `eval/fixtures/`, match each to a `.json` golden label in `eval/golden/`, and report:
 
-* Per-field accuracy on labelled fields (`merchant`, `date`, `total`, `currency`, `subtotal`, `service\\\_charge`, `sst\\\_amount`)
+* Per-field accuracy on labelled fields (`merchant`, `date`, `total`, `currency`, `subtotal`, `service\\\\\\\_charge`, `sst\\\\\\\_amount`)
 * Full-record exact-match rate
 * Latency p50 / p95 / cost summary
 
@@ -187,11 +191,11 @@ Open [http://localhost:3000](http://localhost:3000).
 ```bash
 npm i -g vercel
 vercel
-vercel env add ANTHROPIC\\\_API\\\_KEY
+vercel env add ANTHROPIC\\\\\\\_API\\\\\\\_KEY
 vercel --prod
 ```
 
-Or import the repo in the Vercel dashboard and add `ANTHROPIC\\\_API\\\_KEY` in Settings → Environment Variables.
+Or import the repo in the Vercel dashboard and add `ANTHROPIC\\\\\\\_API\\\\\\\_KEY` in Settings → Environment Variables.
 
 \---
 
